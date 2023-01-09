@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import FormInput from "../form-input/form-input.component";
 import Button from "../button/button.component";
+import { UserContext } from "../../context/user.context";
 import { 
   signInAuthUserWithEmailAndPassword, 
   signInWithGooglePopup,
@@ -16,6 +17,12 @@ const defaultFormFields = {
 const SignInForm = () => {
   const [formFields, setFormFields] = useState(defaultFormFields);
   const { email, password } = formFields;
+  const { setCurrentUser } = useContext(UserContext);
+
+  // Reset form fields to default after submitting
+  const resetFormFields = () => {
+    setFormFields(defaultFormFields);
+  }
 
   const signInGoogleUser = async () => {
     const { user } = await signInWithGooglePopup();
@@ -33,18 +40,22 @@ const SignInForm = () => {
     event.preventDefault();
 
     try {
-      const response = await signInAuthUserWithEmailAndPassword(email, password);
-      console.log(response);
+      const user = await signInAuthUserWithEmailAndPassword(email, password);
+      setCurrentUser(user);
+      resetFormFields();
 
     } catch(error) {
-      // if email doesn't exist
-      if (error.code === 'auth/user-not-found') {
-        alert('User does not exist!')
-      }
+      switch(error.code) {
+        case 'auth/user-not-found':
+          alert('User does not exist!');
+          break;
 
-      // wrong password
-      if (error.code === 'auth/wrong-password') {
-        alert('Incorrect Email or Password!')
+        case 'auth/wrong-password':
+          alert('Incorrect Email or Password!');
+          break;
+
+        default:
+          console.log(error);
       }
     }
   }
@@ -78,7 +89,7 @@ const SignInForm = () => {
 
         <div className='buttonContainer'>
           <Button type='submit'>Log In</Button>
-          <Button onClick={signInGoogleUser} buttonType='google'>Google Sign In</Button>
+          <Button type='button' onClick={signInGoogleUser} buttonType='google'>Google Sign In</Button>
         </div>
       </form>
     </div>
